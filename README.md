@@ -4,8 +4,6 @@ A [Claude Code](https://claude.com/claude-code) / Agent Skill for designing, gen
 
 Covers: `app.json` for all round models, API 1.0 `index.js` patterns (scaling, AOD, analog hands, step/heart data, animated gears), Pillow-based asset generation, QR install via Zepp developer mode, and common install errors ("Yukleme basarisiz / install failed").
 
-> Skill content is written in Turkish.
-
 ## Install
 
 ```bash

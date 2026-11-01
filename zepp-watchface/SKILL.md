@@ -1,28 +1,29 @@
 ---
 name: zepp-watchface
 description: >-
-  Use when creating, redesigning or installing a watch face (kadran) for an Amazfit / Zepp OS watch
+  Use when creating, redesigning or installing a watch face for an Amazfit / Zepp OS watch
   (GTR 3, GTR 3 Pro, GTR 4, GTS, Balance, Active, Cheetah), when zeus-cli / zeus preview / QR install
-  is involved, or when the Zepp app says "Yukleme basarisiz / tekrar deneyin / install failed" after
-  scanning the QR, or a watch face needs AOD, analog hands, animated gears or step/heart data.
+  is involved, or when the Zepp app says "Install failed / try again" (Turkish: "Yukleme basarisiz /
+  tekrar deneyin") after scanning the QR, or a watch face needs AOD, analog hands, animated gears or
+  step/heart data.
 ---
 
-# Zepp OS kadran: tasarim, uretim, yukleme
+# Zepp OS watch face: design, generation, install
 
-## Ozet
-Kadran = zeus projesi (`app.json` + `watchface/index.js` + `assets/<target>.r/`). Gorseller Python/Pillow ile **uretilir**, JS yalnizca yerel widget'lari dizer. Referans proje: `C:\Users\umuti\projects\amazfit-kadran` (8 kadran, ureticiler `tools/`, `DURUM.md`). Yeni kadrana oradan basla, sablon kopyalama.
+## Summary
+Watch face = zeus project (`app.json` + `watchface/index.js` + `assets/<target>.r/`). Images are **generated** with Python/Pillow; JS only lays out native widgets. If you already have a working face project, start from it instead of copying a template.
 
-**Once model:** Zepp > Profil'deki tam adi al. Zepp OS olmayanlar (ilk GTR, GTR 2/2e, GTS 2, Bip U vb.) zeus ile kadran ALMAZ - burada dur, kullaniciya soyle.
+**Model first:** get the exact name from Zepp > Profile. Non-Zepp OS watches (original GTR, GTR 2/2e, GTS 2, Bip U, etc.) CANNOT take zeus watch faces - stop here and tell the user.
 
-## Yukleme (Windows cmd + telefon; iPhone 13'te dogrulandi, Android menusu ayni)
-1. Bir kez: `npm i -g @zeppos/zeus-cli` (kurmadan once tara), `zeus login` (telefondaki Zepp hesabiyla ayni).
-2. Telefon (iOS/Android), bir kez: Zepp > Profil > Ayarlar > Hakkinda > Zepp simgesine **7 kez** dokun -> Gelistirici Modu.
-3. Her kadran: `cd /d C:\Users\umuti\projects\<proje>\faces\<ad> && zeus preview` (cmd'de `~` calismaz).
-4. QR: Zepp > Profil > **saat** > en alta kaydir > Gelistirici Modu > sag ust tara > Yukle. QR bayatlar; her denemede yeni komut.
+## Install (Windows cmd + phone; verified on iPhone 13, Android menu is the same)
+1. Once: `npm i -g @zeppos/zeus-cli` (scan before installing), `zeus login` (same account as the Zepp app on the phone).
+2. Phone (iOS/Android), once: Zepp > Profile > Settings > About > tap the Zepp logo **7 times** -> Developer Mode.
+3. Each face: `cd /d C:\path\to\<project>\faces\<name> && zeus preview` (`~` does not work in cmd).
+4. QR: Zepp > Profile > **watch** > scroll to bottom > Developer Mode > scan icon top right > Install. The QR expires; run the command again for each attempt.
 
-**"Yukleme basarisiz / tekrar deneyin" -> once `zeus preview -s`.** zeus son secilen modeli hatirlar (`~/.zepp/.zeus` icinde `zeus_preview_device`) ve sormadan ona derler; saat farkli modelse Zepp reddeder. Kullanicidan Zepp'teki tam model adini al, `-s` ile sec. Ancak bu da olmazsa: Bluetooth/baglanti, Zepp onde acik, eski kadrani sil, `version.code` artir.
+**"Install failed / try again" -> first `zeus preview -s`.** zeus remembers the last selected model (`zeus_preview_device` in `~/.zepp/.zeus`) and builds for it without asking; if the watch is a different model, Zepp rejects it. Get the exact model name from Zepp and select it with `-s`. Only if that fails: Bluetooth/connection, Zepp open in the foreground, delete the old face, bump `version.code`.
 
-## app.json (tum yuvarlak modeller tek hedef)
+## app.json (one target for all round models)
 ```json
 "configVersion": "v3",
 "app": { "appId": 1093621, "appType": "watchface", "version": { "code": 2, "name": "1.0.1" }, "icon": "icon.png" },
@@ -31,29 +32,29 @@ Kadran = zeus projesi (`app.json` + `watchface/index.js` + `assets/<target>.r/`)
 "targets": { "common": { "module": { "watchface": { "path": "watchface/index", "main": 1 } },
   "platforms": [{ "st": "r" }], "designWidth": 480 } }
 ```
-- Gorseller `assets/common.r/`; zeus `designWidth`'e gore cihaza olcekler (454/466/480 icin ayri klasor GEREKMEZ).
-- `appId`: gelistirici onizlemesinde herhangi benzersiz sayi; her kadrana ayri.
-- API 1.0 = GTR 3 ailesi dahil hepsinde calisir: global `hmUI`, `hmSensor`, `hmSetting`, `timer` (`@zos/*` import'lari API 2+).
+- Images go in `assets/common.r/`; zeus scales to the device based on `designWidth` (NO separate folders needed for 454/466/480).
+- `appId`: any unique number works for developer preview; use a different one per face.
+- API 1.0 = runs on everything including the GTR 3 family: globals `hmUI`, `hmSensor`, `hmSetting`, `timer` (`@zos/*` imports are API 2+).
 
-## index.js kaliplari (API 1.0)
-- Olcek: `const k = hmSetting.getDeviceInfo().width / 480; const s = v => Math.round(v * k)` - TUM koordinatlar `s()` ile. `px()`'e guvenme.
-- AOD: `const aod = hmSetting.getScreenType() == hmSetting.screen_type.AOD`; `show_level = aod ? hmUI.show_level.ONAL_AOD : hmUI.show_level.ONLY_NORMAL` (ONAL yazimi dogru). AOD'de ayri `aod.png` + saniyesiz ibre + dis hatli ibre gorselleri.
-- Katman sirasi = olusturma sirasi: zemin IMG en once, ibre (`TIME_POINTER`) sona, cam/yansima en ustte.
-- Yerel widget'lar (timer gerektirmez, AOD'de calisir): `TIME_POINTER` (`hour_posX/posY` = ibre gorselindeki donme noktasi), `IMG_TIME`, `IMG_DATE` (`month_is_character` -> 12 gorsel), `IMG_WEEK` (7 gorsel, 1 = Pazartesi varsayimi; saatte dogrula), `TEXT_IMG` + `hmUI.data_type.STEP/HEART/BATTERY`.
-- Hedefe gore ilerleme: `hmSensor.id.STEP` `.current/.target`, `addEventListener(hmSensor.event.CHANGE)`; segmentler `setProperty(hmUI.prop.VISIBLE)`, yay `ARC_PROGRESS` + `setProperty(hmUI.prop.MORE, tumParametreler)`.
-- Animasyon: donen parca `IMG` + `setProperty(hmUI.prop.ANGLE, tamsayi)`, `timer.createTimer(0, ms, fn, {})`; `WIDGET_DELEGATE` `resume_call/pause_call` ile baslat/durdur. Kare animasyonu `IMG_ANIM` (`anim_path`, `anim_prefix`_i.png).
+## index.js patterns (API 1.0)
+- Scale: `const k = hmSetting.getDeviceInfo().width / 480; const s = v => Math.round(v * k)` - wrap ALL coordinates in `s()`. Do not rely on `px()`.
+- AOD: `const aod = hmSetting.getScreenType() == hmSetting.screen_type.AOD`; `show_level = aod ? hmUI.show_level.ONAL_AOD : hmUI.show_level.ONLY_NORMAL` (the `ONAL` spelling is correct). In AOD use a separate `aod.png` + no seconds hand + outline hand images.
+- Layer order = creation order: background IMG first, hands (`TIME_POINTER`) last, glass/reflection on top.
+- Native widgets (no timer needed, work in AOD): `TIME_POINTER` (`hour_posX/posY` = pivot point in the hand image), `IMG_TIME`, `IMG_DATE` (`month_is_character` -> 12 images), `IMG_WEEK` (7 images, assumes 1 = Monday; verify on the watch), `TEXT_IMG` + `hmUI.data_type.STEP/HEART/BATTERY`.
+- Progress toward goal: `hmSensor.id.STEP` `.current/.target`, `addEventListener(hmSensor.event.CHANGE)`; segments via `setProperty(hmUI.prop.VISIBLE)`, arc via `ARC_PROGRESS` + `setProperty(hmUI.prop.MORE, allParams)`.
+- Animation: rotating part = `IMG` + `setProperty(hmUI.prop.ANGLE, integer)`, `timer.createTimer(0, ms, fn, {})`; start/stop with `WIDGET_DELEGATE` `resume_call/pause_call`. Frame animation: `IMG_ANIM` (`anim_path`, `anim_prefix`_i.png).
 
-## Gorsel uretimi (Pillow)
-- 4x supersampling ile ciz, LANCZOS ile kucult. Ibre gorseli ucu yukari, pivot `(W/2, L)`; golge eklenirse pivot pad kadar kayar.
-- Yardimcilar referans projede: `gen_analog.py` (polar, steel_ring konik metal, ceramic, grain, glass, applied_index, hand sekilleri, aod_bg, aod_hand), `movement.py` (iskelet carklar, Cenevre kopru), `gen_lcd.py` (7/14 segment), `icons.py` (esit cizgi ikon), `audit.py` (gercek olcude normal+AOD sayfasi).
-- Bitirmeden: `python tools/audit.py 466` uret, goruntuyu oku; tum `faces/*/watchface/index.js` icin `node --check`; her kadranda `zeus build`.
+## Image generation (Pillow)
+- Draw at 4x supersampling, downscale with LANCZOS. Hand image points up, pivot `(W/2, L)`; if you add a shadow, the pivot shifts by the padding.
+- Useful helpers to write: polar placement, conic metal ring, ceramic, grain, glass, applied indices, hand shapes, AOD background and AOD hands; skeleton gears / bridges for movement faces; 7/14-segment digits for LCD faces; consistent line icons; an audit script that renders normal + AOD at real size.
+- Before finishing: render the audit page (e.g. at 466 px) and look at it; `node --check` every `faces/*/watchface/index.js`; `zeus build` in every face.
 
-## Sik hatalar
-| Belirti | Neden / cozum |
+## Common errors
+| Symptom | Cause / fix |
 |---|---|
-| QR sonrasi "tekrar deneyin" | Yanlis model -> `zeus preview -s` |
-| cmd "yol bulunamiyor" | `~` yok -> `cd /d C:\Users\...` |
-| Zemin saati/ibreyi kapatiyor | Widget sirasi; zemin once |
-| Halka/daire dev cizildi | Yaricapi iki kez SS ile carpma |
-| Kare koselerde doku/kar | grain'i daire maskesiyle uygula, disi siyah |
-| Marka/logo | Kisisel kullanimda yazi olabilir, logo cizme, paylasma |
+| "Try again" after QR | Wrong model -> `zeus preview -s` |
+| cmd "path not found" | No `~` -> `cd /d C:\Users\...` |
+| Background covers time/hands | Widget order; background first |
+| Ring/circle drawn huge | Radius multiplied by SS twice |
+| Texture/noise in square corners | Apply grain with a circle mask, outside black |
+| Brand/logo | Text is OK for personal use; do not draw logos, do not share |
